@@ -45,18 +45,35 @@ book = epub.read_epub(args.file)
 book_items = list(book.get_items_of_type(ebooklib.ITEM_DOCUMENT))
 print(f"Number of book items: {len(book_items)}")
 
-chapters = []
+parts = []
 
 for index, item in enumerate(book_items):
     plain_text = strip_html_tags(item.get_content())
-    chapters.append({"filename": f"{source}_chapter_{index}", "plain_text": plain_text})
+    words = plain_text.split()
+    count = len(words)
+    if count < 4000:
+        parts.append(
+            {"filename": f"{source}_chapter_{index}", "plain_text": plain_text}
+        )
+    else:
+        for i in range(0, count, 4000):
+            part_words = words[i : i + 4000]
+            part_text = " ".join(part_words)
+            parts.append(
+                {
+                    "filename": f"{source}_chapter_{index}_part_{i // 4000 + 1}",
+                    "plain_text": part_text,
+                }
+            )
 
-for chapter in chapters:
-    print(f"Processing {chapter["filename"]}...")
-    create_aiff(chapter["filename"], chapter["plain_text"])
+for part in parts:
+    print(
+        f"Processing {part["filename"]}, word count: {len(part["plain_text"].split())}"
+    )
+    create_aiff(part["filename"], part["plain_text"])
 
-for chapter in chapters:
-    print(f"Converting {chapter["filename"]} to MP3...")
-    convert_to_mp3(chapter["filename"])
+for part in parts:
+    print(f"Converting {part["filename"]} to MP3...")
+    convert_to_mp3(part["filename"])
 
 print("Done")
