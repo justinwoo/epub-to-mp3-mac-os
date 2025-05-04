@@ -90,13 +90,9 @@ for index, item in enumerate(book_items):
             )
 
 for part in parts:
-    print(
-        f"Processing {part['filename']}, word count: {len(part['plain_text'].split())}"
-    )
     create_aiff(part["filename"], part["plain_text"])
 
 for part in parts:
-    print(f"Converting {part['filename']} to MP3...")
     convert_to_mp3(part["filename"])
 
 print("Done")
