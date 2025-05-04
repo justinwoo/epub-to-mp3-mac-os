@@ -5,6 +5,9 @@ from ebooklib import epub
 import re
 import os
 import argparse
+import signal
+import sys
+import subprocess
 
 
 def strip_html_tags(html_content):
@@ -12,15 +15,20 @@ def strip_html_tags(html_content):
     return clean_text
 
 
-os.system("mkdir -p temp")
-os.system("mkdir -p output")
+os.makedirs("temp", exist_ok=True)
+os.makedirs("output", exist_ok=True)
 
 
 def create_aiff(filename, text):
     aiff_path = f"temp/{filename}.aiff"
     if not os.path.exists(aiff_path):
         print(f"Creating AIFF file: {aiff_path}")
-        os.system(f'say -r 220 "{text}" -o "{aiff_path}"')
+
+        subprocess.run(
+            ["say", "-r", "220", text, "-o", aiff_path],
+            check=True,
+        )
+
     else:
         print(f"AIFF file already exists: {aiff_path}")
 
@@ -30,9 +38,24 @@ def convert_to_mp3(filename):
     mp3_path = f"output/{filename}.mp3"
     if not os.path.exists(mp3_path):
         print(f"Converting to MP3: {mp3_path}")
-        os.system(f'ffmpeg -i "{aiff_path}" "{mp3_path}"')
+
+        subprocess.run(
+            ["ffmpeg", "-i", aiff_path, mp3_path],
+            check=True,
+        )
+
     else:
         print(f"MP3 file already exists: {mp3_path}")
+
+
+# Signal handler for Ctrl+C (SIGINT)
+def handle_sigint(signum, frame):
+    print("\nReceived Ctrl+C. Terminating...")
+    sys.exit(0)
+
+
+# Register the signal handler
+signal.signal(signal.SIGINT, handle_sigint)
 
 
 parser = argparse.ArgumentParser(description="Process an EPUB file.")
@@ -68,12 +91,12 @@ for index, item in enumerate(book_items):
 
 for part in parts:
     print(
-        f"Processing {part["filename"]}, word count: {len(part["plain_text"].split())}"
+        f"Processing {part['filename']}, word count: {len(part['plain_text'].split())}"
     )
     create_aiff(part["filename"], part["plain_text"])
 
 for part in parts:
-    print(f"Converting {part["filename"]} to MP3...")
+    print(f"Converting {part['filename']} to MP3...")
     convert_to_mp3(part["filename"])
 
 print("Done")
