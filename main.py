@@ -8,7 +8,6 @@ import argparse
 
 
 def strip_html_tags(html_content):
-    # lol
     clean_text = re.sub(r"<[^>]+>", "", html_content.decode("utf-8"))
     return clean_text
 
@@ -17,9 +16,23 @@ os.system("mkdir -p temp")
 os.system("mkdir -p output")
 
 
-def text_to_mp3(filename, text):
-    os.system(f'say -r 220 "{text}" -o "temp/{filename}.aiff"')
-    os.system(f'ffmpeg -i "temp/{filename}.aiff" "output/{filename}.mp3"')
+def create_aiff(filename, text):
+    aiff_path = f"temp/{filename}.aiff"
+    if not os.path.exists(aiff_path):
+        print(f"Creating AIFF file: {aiff_path}")
+        os.system(f'say -r 220 "{text}" -o "{aiff_path}"')
+    else:
+        print(f"AIFF file already exists: {aiff_path}")
+
+
+def convert_to_mp3(filename):
+    aiff_path = f"temp/{filename}.aiff"
+    mp3_path = f"output/{filename}.mp3"
+    if not os.path.exists(mp3_path):
+        print(f"Converting to MP3: {mp3_path}")
+        os.system(f'ffmpeg -i "{aiff_path}" "{mp3_path}"')
+    else:
+        print(f"MP3 file already exists: {mp3_path}")
 
 
 parser = argparse.ArgumentParser(description="Process an EPUB file.")
@@ -36,11 +49,14 @@ chapters = []
 
 for index, item in enumerate(book_items):
     plain_text = strip_html_tags(item.get_content())
-    chapters.append({"index": index, "plain_text": plain_text})
+    chapters.append({"filename": f"{source}_chapter_{index}", "plain_text": plain_text})
 
 for chapter in chapters:
-    filename = f"{source}_chapter_{chapter['index']}"
-    print("Turning into mp3:", filename)
-    text_to_mp3(filename, chapter["plain_text"])
+    print(f"Processing {chapter["filename"]}...")
+    create_aiff(chapter["filename"], chapter["plain_text"])
+
+for chapter in chapters:
+    print(f"Converting {chapter["filename"]} to MP3...")
+    convert_to_mp3(chapter["filename"])
 
 print("Done")
